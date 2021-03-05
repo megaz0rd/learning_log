@@ -6,14 +6,14 @@
 
 <p>Entries:</p>
 <ul>
-    {% for entry in entries %}}
+    {% for entry in entries %}
     <li>
         <p>{{ entry.date_added|date:'d M Y H:i' }}</p>
         <p>{{ entry.text|linebreaks }}</p>
     </li>
     {% empty %}
     <li>No entry has been added.</li>
-    {% enfor %}
+    {% endfor %}
 </ul>
 
 {% endblock content %}
