@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 
 from .models import Entry, Topic
 from .forms import EntryForm, TopicForm
+from .utils import check_topic_owner
 
 
 def index(request):
@@ -13,7 +14,7 @@ def index(request):
 @login_required
 def topics(request):
     """Render all topics"""
-    topics = Topic.objects.order_by('date_added')
+    topics = Topic.objects.filter(owner=request.user).order_by('date_added')
     context = {'topics': topics}
     return render(request, 'learning_logs/topics.html', context)
 
@@ -22,6 +23,8 @@ def topics(request):
 def topic(request, topic_id):
     """Render one specific topic"""
     topic = get_object_or_404(Topic, id=topic_id)
+    check_topic_owner(request, topic)
+
     entries = topic.entry_set.order_by('-date_added')
     context = {'topic': topic, 'entries': entries}
     return render(request, 'learning_logs/topic.html', context)
@@ -35,7 +38,9 @@ def new_topic(request):
     else:
         form = TopicForm(data=request.POST)
         if form.is_valid():
-            form.save()
+            new_topic = form.save(commit=False)
+            new_topic.owner = request.user
+            new_topic.save()
             return redirect('learning_logs:topics')
 
     context = {'form': form}
@@ -46,6 +51,8 @@ def new_topic(request):
 def new_entry(request, topic_id):
     """Render form to create an entry"""
     topic = get_object_or_404(Topic, id=topic_id)
+    check_topic_owner(request, topic)
+
     if request.method != 'POST':
         form = EntryForm()
     else:
@@ -68,6 +75,8 @@ def edit_entry(request, entry_id):
     """Render form to edit entry"""
     entry = get_object_or_404(Entry, id=entry_id)
     topic = entry.topic
+    check_topic_owner(request, topic)
+
     if request.method != 'POST':
         form = EntryForm(instance=entry)
     else:
